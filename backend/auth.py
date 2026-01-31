@@ -6,6 +6,8 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 from .config import get_settings
 from .database import get_db
@@ -56,14 +58,45 @@ def get_current_user(
         payload = jwt.decode(
             token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
         )
-        user_id: int = payload.get("sub")
+        user_id = payload.get("sub")
         if user_id is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
-    user = db.get(User, user_id)
+    try:
+        user_id_int = int(user_id)
+    except (ValueError, TypeError):
+        raise credentials_exception
+
+    user = db.get(User, user_id_int)
     if user is None:
         raise credentials_exception
     return user
 
+
+def verify_google_token(token: str, client_id: str) -> Optional[dict]:
+    """
+    Verify a Google ID token and return the user info.
+    Returns None if verification fails.
+    """
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            token, 
+            google_requests.Request(), 
+            client_id
+        )
+        
+        # Verify the issuer
+        if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+            return None
+        
+        return {
+            'email': idinfo.get('email'),
+            'name': idinfo.get('name'),
+            'picture': idinfo.get('picture'),
+            'email_verified': idinfo.get('email_verified', False),
+        }
+    except ValueError:
+        # Invalid token
+        return None
