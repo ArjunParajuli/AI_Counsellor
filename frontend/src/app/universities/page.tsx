@@ -281,9 +281,12 @@ export default function UniversitiesPage() {
                   {/* Header */}
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
-                      <h3 className="font-bold text-slate-900 dark:text-slate-100 leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      <a
+                        href={`/universities/${uni.id}`}
+                        className="font-bold text-slate-900 dark:text-slate-100 leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors hover:underline"
+                      >
                         {uni.name}
-                      </h3>
+                      </a>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
                         <span>📍</span> {uni.city}, {uni.country}
                       </p>
@@ -358,6 +361,14 @@ export default function UniversitiesPage() {
                       </button>
                     </div>
                   )}
+
+                  {/* View Details Link */}
+                  <a
+                    href={`/universities/${uni.id}`}
+                    className="mt-3 block w-full text-center py-2 rounded-xl text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all"
+                  >
+                    View Details →
+                  </a>
                 </div>
               );
             })}

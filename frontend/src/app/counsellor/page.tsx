@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { API_BASE_URL } from "@/lib/api";
 
 type Message = {
@@ -43,6 +43,7 @@ type UniversityRecommendation = {
 
 export default function CounsellorPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
@@ -58,6 +59,7 @@ export default function CounsellorPage() {
   const [error, setError] = useState<string | null>(null);
   const [profileSummary, setProfileSummary] = useState<ProfileSummary | null>(null);
   const [recommendations, setRecommendations] = useState<UniversityRecommendation[]>([]);
+  const [pendingUniversityPrompt, setPendingUniversityPrompt] = useState<string | null>(null);
 
   // Chat history state
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -239,6 +241,85 @@ export default function CounsellorPage() {
     setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
   }
 
+  // Check URL params for university overview request
+  useEffect(() => {
+    const universityName = searchParams.get("university");
+    const universityId = searchParams.get("id");
+    if (universityName && currentSessionId && !loading && !pendingUniversityPrompt) {
+      const prompt = `Tell me about ${universityName}. Give me a comprehensive overview including: what makes it special, typical admission requirements, campus culture, and whether it's a good fit for my profile. Be specific and helpful.`;
+      setPendingUniversityPrompt(prompt);
+    }
+  }, [searchParams, currentSessionId, loading, pendingUniversityPrompt]);
+
+  // Send pending university prompt automatically
+  useEffect(() => {
+    if (pendingUniversityPrompt && currentSessionId && !loading) {
+      const sendPendingMessage = async () => {
+        const token = window.localStorage.getItem("token");
+        if (!token) return;
+
+        const userMessage: Message = {
+          role: "user",
+          content: pendingUniversityPrompt,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, userMessage]);
+        setPendingUniversityPrompt(null);
+        setLoading(true);
+        setError(null);
+
+        try {
+          // Save user message
+          await fetch(`${API_BASE_URL}/chat/message?session_id=${currentSessionId}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ role: "user", content: userMessage.content }),
+          });
+
+          // Get AI response
+          const res = await fetch(`${API_BASE_URL}/counsellor`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ role: "user", content: userMessage.content }),
+          });
+
+          if (!res.ok) throw new Error(await res.text() || "Counsellor request failed");
+
+          const data = (await res.json()) as ResponsePayload;
+          const assistantMessage = data.messages[0];
+
+          if (assistantMessage) {
+            setMessages((prev) => [...prev, { ...assistantMessage, timestamp: new Date() }]);
+            speak(assistantMessage.content);
+
+            // Save assistant message
+            await fetch(`${API_BASE_URL}/chat/message?session_id=${currentSessionId}`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ role: "assistant", content: assistantMessage.content }),
+            });
+          }
+        } catch (err) {
+          setError((err as Error).message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      sendPendingMessage();
+    }
+  }, [pendingUniversityPrompt, currentSessionId, loading, speak]);
+
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const token = window.localStorage.getItem("token");
@@ -362,8 +443,8 @@ export default function CounsellorPage() {
                 <div
                   key={session.session_id}
                   className={`p-2 rounded-lg cursor-pointer transition group ${session.session_id === currentSessionId
-                      ? "bg-indigo-500/20 border border-indigo-400/40"
-                      : "bg-slate-800/50 hover:bg-slate-700/50"
+                    ? "bg-indigo-500/20 border border-indigo-400/40"
+                    : "bg-slate-800/50 hover:bg-slate-700/50"
                     }`}
                   onClick={() => loadSession(session.session_id)}
                 >
@@ -420,8 +501,8 @@ export default function CounsellorPage() {
               <button
                 onClick={() => setVoiceEnabled(!voiceEnabled)}
                 className={`rounded-full px-2 py-1 text-[10px] font-medium transition ${voiceEnabled
-                    ? "bg-indigo-500/20 text-indigo-300"
-                    : "bg-slate-800 text-slate-400"
+                  ? "bg-indigo-500/20 text-indigo-300"
+                  : "bg-slate-800 text-slate-400"
                   }`}
               >
                 {voiceEnabled ? "🔊" : "🔇"}
@@ -456,8 +537,8 @@ export default function CounsellorPage() {
               >
                 <div
                   className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs whitespace-pre-wrap break-words ${m.role === "user"
-                      ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white"
-                      : "bg-slate-800/80 text-slate-100 border border-white/5"
+                    ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white"
+                    : "bg-slate-800/80 text-slate-100 border border-white/5"
                     }`}
                 >
                   {m.role === "assistant" && (
@@ -485,10 +566,10 @@ export default function CounsellorPage() {
                   <div
                     key={idx}
                     className={`rounded-xl border p-2 text-xs ${rec.category === "dream"
-                        ? "border-purple-400/40 bg-purple-950/30"
-                        : rec.category === "safe"
-                          ? "border-emerald-400/40 bg-emerald-950/30"
-                          : "border-blue-400/40 bg-blue-950/30"
+                      ? "border-purple-400/40 bg-purple-950/30"
+                      : rec.category === "safe"
+                        ? "border-emerald-400/40 bg-emerald-950/30"
+                        : "border-blue-400/40 bg-blue-950/30"
                       }`}
                   >
                     <div className="flex items-center justify-between mb-1">
@@ -496,10 +577,10 @@ export default function CounsellorPage() {
                         {rec.name || `University #${rec.university_id}`}
                       </span>
                       <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${rec.category === "dream"
-                          ? "bg-purple-500/30 text-purple-200"
-                          : rec.category === "safe"
-                            ? "bg-emerald-500/30 text-emerald-200"
-                            : "bg-blue-500/30 text-blue-200"
+                        ? "bg-purple-500/30 text-purple-200"
+                        : rec.category === "safe"
+                          ? "bg-emerald-500/30 text-emerald-200"
+                          : "bg-blue-500/30 text-blue-200"
                         }`}>
                         {rec.category.toUpperCase()}
                       </span>
@@ -537,8 +618,8 @@ export default function CounsellorPage() {
               type="button"
               onClick={toggleListening}
               className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all text-sm ${isListening
-                  ? "bg-red-500 text-white animate-pulse"
-                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                ? "bg-red-500 text-white animate-pulse"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                 }`}
             >
               {isListening ? "⏹️" : "🎙️"}
