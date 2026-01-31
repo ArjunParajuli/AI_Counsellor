@@ -1,25 +1,28 @@
 """
-Google Gemini LLM Client for AI Counsellor.
+OpenRouter LLM Client for AI Counsellor.
 
-This module provides integration with Google's Gemini API for AI-powered
-counselling features.
+This module provides integration with OpenRouter API, which gives access
+to various LLM models including Claude, GPT-4, etc.
 """
 
 import json
 import os
 from typing import Any
 
-import google.generativeai as genai
+import httpx
 
 from .config import get_settings
 
 
-def get_gemini_api_key() -> str:
-    """Get Gemini API key from environment."""
-    key = os.getenv("GEMINI_API_KEY", "")
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+
+def get_openrouter_api_key() -> str:
+    """Get OpenRouter API key from environment."""
+    key = os.getenv("OPENROUTER_API_KEY", "")
     if not key:
         settings = get_settings()
-        key = getattr(settings, "gemini_api_key", "")
+        key = getattr(settings, "openrouter_api_key", "")
     return key
 
 
@@ -160,54 +163,52 @@ Include actions at the END of your response in this EXACT format:
 async def chat_with_llm(
     messages: list[dict],
     system_prompt: str,
-    model: str = "gemini-2.0-flash",
+    model: str = "deepseek/deepseek-chat-v3-0324:free",
 ) -> dict[str, Any]:
     """
-    Send a chat request to Gemini and get the AI response.
+    Send a chat request to OpenRouter and get the AI response.
     
     Returns:
         dict with "content" (str) and "actions" (list of action dicts)
     """
-    api_key = get_gemini_api_key()
+    api_key = get_openrouter_api_key()
     
     if not api_key:
         # Fallback to rule-based response if no API key
         return {
-            "content": "I'm your AI counsellor. To enable full AI capabilities, please configure the GEMINI_API_KEY environment variable. For now, I can provide basic guidance based on your profile.",
+            "content": "I'm your AI counsellor. To enable full AI capabilities, please configure the OPENROUTER_API_KEY environment variable. For now, I can provide basic guidance based on your profile.",
             "actions": []
         }
     
+    # Build the request
+    full_messages = [{"role": "system", "content": system_prompt}]
+    full_messages.extend(messages)
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:3000",
+        "X-Title": "AI Counsellor",
+    }
+    
+    payload = {
+        "model": model,
+        "messages": full_messages,
+        "temperature": 0.7,
+        "max_tokens": 1500,
+    }
+    
     try:
-        # Configure Gemini
-        genai.configure(api_key=api_key)
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                OPENROUTER_API_URL,
+                headers=headers,
+                json=payload,
+            )
+            response.raise_for_status()
+            data = response.json()
         
-        # Create the model
-        generation_config = {
-            "temperature": 0.7,
-            "top_p": 0.95,
-            "max_output_tokens": 2048,
-        }
-        
-        model_instance = genai.GenerativeModel(
-            model_name=model,
-            generation_config=generation_config,
-            system_instruction=system_prompt,
-        )
-        
-        # Build chat history for Gemini format
-        chat_history = []
-        for msg in messages[:-1]:  # All except the last message
-            role = "user" if msg["role"] == "user" else "model"
-            chat_history.append({"role": role, "parts": [msg["content"]]})
-        
-        # Start chat with history
-        chat = model_instance.start_chat(history=chat_history)
-        
-        # Send the last message
-        last_message = messages[-1]["content"] if messages else "Hello"
-        response = chat.send_message(last_message)
-        
-        content = response.text
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
         
         # Parse actions from the response
         actions = []
@@ -224,8 +225,13 @@ async def chat_with_llm(
         
         return {"content": content, "actions": actions}
         
+    except httpx.HTTPStatusError as e:
+        return {
+            "content": f"I encountered an error connecting to the AI service. Please try again. (Error: {e.response.status_code})",
+            "actions": []
+        }
     except Exception as e:
         return {
-            "content": f"I encountered an error. Please try again. (Error: {str(e)})",
+            "content": f"Something went wrong. Please try again. (Error: {str(e)})",
             "actions": []
         }

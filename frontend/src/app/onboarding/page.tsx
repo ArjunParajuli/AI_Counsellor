@@ -386,12 +386,16 @@ export default function OnboardingPage() {
     setVoiceQuestionIndex((prev) => prev + 1);
   }, [voiceTranscript, processVoiceAnswer]);
 
-  // Auto-ask next question when index changes
+  // Auto-ask next question when index changes or voice mode starts
   useEffect(() => {
-    if (mode === "voice" && voiceQuestionIndex > 0 && voiceQuestionIndex < VOICE_QUESTIONS.length) {
-      askNextQuestion();
+    if (mode === "voice" && voiceQuestionIndex >= 0 && voiceQuestionIndex < VOICE_QUESTIONS.length) {
+      // Small delay to ensure state is settled
+      const timer = setTimeout(() => {
+        askNextQuestion();
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [voiceQuestionIndex, mode]);
+  }, [voiceQuestionIndex, mode, askNextQuestion]);
 
   async function handleSubmit(e?: FormEvent) {
     if (e) e.preventDefault();
@@ -447,6 +451,10 @@ export default function OnboardingPage() {
     return step.fields.every((field) => {
       const value = formState[field];
       if (field === "gpa") return true; // Optional
+      // Exam status fields have default values, so they're always "complete"
+      if (field === "ieltsToeflStatus" || field === "greGmatStatus" || field === "sopStatus") {
+        return true; // These have valid default values
+      }
       return value !== "" && value !== 0;
     });
   };
@@ -510,7 +518,6 @@ export default function OnboardingPage() {
             onClick={() => {
               setMode("voice");
               setVoiceQuestionIndex(0);
-              setTimeout(() => askNextQuestion(), 500);
             }}
             className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-8 text-left transition-all hover:border-purple-400/50 hover:shadow-xl hover:shadow-purple-500/10 hover:scale-[1.02]"
           >
