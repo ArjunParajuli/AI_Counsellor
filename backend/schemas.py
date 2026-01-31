@@ -173,3 +173,42 @@ class CounsellorResponse(BaseModel):
     messages: List[CounsellorMessage]
     actions: List[CounsellorAction] = []
 
+
+# Chat History Schemas
+class ChatMessageOut(BaseModel):
+    id: int
+    role: str
+    content: str
+    session_id: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ChatHistorySession(BaseModel):
+    session_id: str
+    started_at: datetime
+    message_count: int
+    preview: str  # First message preview
+
+
+class ChatHistoryResponse(BaseModel):
+    sessions: List[ChatHistorySession]
+    total_messages: int
+
+
+# User schemas with avatar
+class UserWithAvatar(BaseModel):
+    id: int
+    full_name: str
+    email: EmailStr
+    avatar_url: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
+class AvatarUploadResponse(BaseModel):
+    avatar_url: str
+    message: str

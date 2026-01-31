@@ -65,6 +65,11 @@ class TodoStatusEnum(str, Enum):
     COMPLETED = "completed"
 
 
+class ChatRoleEnum(str, Enum):
+    USER = "user"
+    ASSISTANT = "assistant"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -72,6 +77,7 @@ class User(Base):
     full_name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
+    avatar_url = Column(String(500), nullable=True)  # Profile picture URL
     created_at = Column(DateTime, default=datetime.utcnow)
 
     profile = relationship("Profile", back_populates="user", uselist=False)
@@ -79,6 +85,23 @@ class User(Base):
     user_universities = relationship(
         "UserUniversity", back_populates="user", cascade="all, delete-orphan"
     )
+    chat_messages = relationship(
+        "ChatMessage", back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class ChatMessage(Base):
+    """Stores conversation history with AI counsellor."""
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    role = Column(SqlEnum(ChatRoleEnum), nullable=False)
+    content = Column(Text, nullable=False)
+    session_id = Column(String(100), nullable=True)  # Group messages by session
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="chat_messages")
 
 
 class Profile(Base):
