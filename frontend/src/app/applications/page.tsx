@@ -80,11 +80,13 @@ export default function ApplicationsPage() {
     const token = window.localStorage.getItem("token");
     if (!token || !selectedUni) return;
 
+    const universityId = selectedUni.university_id;
+
     async function loadTodos() {
       try {
         // Filter by university_id for university-specific tasks
         const todosRes = await fetch(
-          `${API_BASE_URL}/todos?university_id=${selectedUni.university_id}`,
+          `${API_BASE_URL}/todos?university_id=${universityId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
