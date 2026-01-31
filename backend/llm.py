@@ -163,7 +163,7 @@ Include actions at the END of your response in this EXACT format:
 async def chat_with_llm(
     messages: list[dict],
     system_prompt: str,
-    model: str = "deepseek/deepseek-chat-v3-0324:free",
+    model: str = "arcee-ai/trinity-large-preview:free:nitro",
 ) -> dict[str, Any]:
     """
     Send a chat request to OpenRouter and get the AI response.
