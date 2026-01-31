@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState, useRef, useCallback } from "react";
+import { FormEvent, useEffect, useState, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -41,7 +41,7 @@ type UniversityRecommendation = {
   risk?: string;
 };
 
-export default function CounsellorPage() {
+function CounsellorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -669,5 +669,16 @@ export default function CounsellorPage() {
         </div>
       </section>
     </div>
+  );
+}
+export default function CounsellorPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <CounsellorContent />
+    </Suspense>
   );
 }
