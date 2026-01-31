@@ -1,0 +1,22 @@
+databases:
+  - name: ai-counsellor-db
+    databaseName: counsellor
+    user: counsellor
+    plan: free
+
+services:
+  - type: web
+    name: ai-counsellor-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ai-counsellor-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: OPENROUTER_API_KEY
+        sync: false
