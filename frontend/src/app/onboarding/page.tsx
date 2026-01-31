@@ -189,7 +189,8 @@ export default function OnboardingPage() {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState("");
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
 
   const formState: Record<string, string | number> = {
@@ -301,7 +302,8 @@ export default function OnboardingPage() {
   }, []);
 
   const startListening = useCallback(() => {
-    const SpeechRecognitionAPI = (window as unknown as { SpeechRecognition?: new () => SpeechRecognition; webkitSpeechRecognition?: new () => SpeechRecognition }).SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognition }).webkitSpeechRecognition;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) {
       setError("Speech recognition not supported in this browser");
       return;
@@ -727,10 +729,10 @@ export default function OnboardingPage() {
                     setCurrentStep(step.id);
                   }}
                   className={`relative flex items-center justify-center w-14 h-14 rounded-full transition-all duration-300 ${isActive
-                      ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/40 scale-110 ring-4 ring-indigo-500/30"
-                      : isComplete
-                        ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/40 ring-4 ring-emerald-500/30"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-2 border-slate-200 dark:border-slate-600 hover:border-indigo-300 dark:hover:border-indigo-500"
+                    ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/40 scale-110 ring-4 ring-indigo-500/30"
+                    : isComplete
+                      ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/40 ring-4 ring-emerald-500/30"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-2 border-slate-200 dark:border-slate-600 hover:border-indigo-300 dark:hover:border-indigo-500"
                     }`}
                 >
                   {isComplete && !isActive ? (
@@ -749,8 +751,8 @@ export default function OnboardingPage() {
                 </button>
                 {index < STEPS.length - 1 && (
                   <div className={`w-12 md:w-20 h-1.5 mx-2 rounded-full transition-all duration-500 ${isComplete
-                      ? "bg-gradient-to-r from-emerald-500 to-teal-500 shadow-sm shadow-emerald-500/30"
-                      : "bg-slate-200 dark:bg-slate-700"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-500 shadow-sm shadow-emerald-500/30"
+                    : "bg-slate-200 dark:bg-slate-700"
                     }`} />
                 )}
               </div>
@@ -762,10 +764,10 @@ export default function OnboardingPage() {
             <span
               key={step.id}
               className={`font-medium transition-colors ${currentStep === step.id
-                  ? "text-indigo-600 dark:text-indigo-400"
-                  : isStepComplete(step.id)
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-slate-400 dark:text-slate-500"
+                ? "text-indigo-600 dark:text-indigo-400"
+                : isStepComplete(step.id)
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-slate-400 dark:text-slate-500"
                 }`}
             >
               {step.title}

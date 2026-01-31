@@ -31,13 +31,7 @@ type InterviewSimulatorProps = {
     onClose?: () => void;
 };
 
-// Extend Window interface for SpeechRecognition
-declare global {
-    interface Window {
-        SpeechRecognition: typeof SpeechRecognition;
-        webkitSpeechRecognition: typeof SpeechRecognition;
-    }
-}
+// SpeechRecognition types are defined in src/types/speech.d.ts
 
 export default function InterviewSimulator({
     universityName,
@@ -57,7 +51,8 @@ export default function InterviewSimulator({
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [voiceSupported, setVoiceSupported] = useState(false);
-    const recognitionRef = useRef<SpeechRecognition | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recognitionRef = useRef<any>(null);
 
     // Check for voice support on mount
     useEffect(() => {
@@ -128,7 +123,8 @@ export default function InterviewSimulator({
     const startListening = useCallback(() => {
         if (!voiceSupported) return;
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) return;
 
         // Stop any ongoing speech
@@ -144,29 +140,26 @@ export default function InterviewSimulator({
             setIsListening(true);
         };
 
-        recognition.onresult = (event) => {
+        recognition.onresult = (event: any) => {
             let finalTranscript = "";
             let interimTranscript = "";
 
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
-                    finalTranscript += transcript;
+                    finalTranscript += event.results[i][0].transcript;
                 } else {
-                    interimTranscript = transcript;
+                    interimTranscript += event.results[i][0].transcript;
                 }
             }
-
             if (finalTranscript) {
-                setInput(prev => prev + finalTranscript);
-            } else if (interimTranscript) {
-                // Show interim results in a way that doesn't overwrite final ones
+                setInput(finalTranscript);
             }
         };
 
-        recognition.onerror = (event) => {
-            console.error("Speech recognition error:", event.error);
+        recognition.onerror = (event: any) => {
+            console.error("Speech recognition error", event.error);
             setIsListening(false);
+            setVoiceMode(false);
         };
 
         recognition.onend = () => {
