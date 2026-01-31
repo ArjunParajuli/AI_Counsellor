@@ -45,7 +45,8 @@ export default function CounsellorPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -84,9 +85,11 @@ export default function CounsellorPage() {
         recognition.interimResults = true;
         recognition.lang = "en-US";
 
-        recognition.onresult = (event: SpeechRecognitionEvent) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        recognition.onresult = (event: any) => {
           const transcript = Array.from(event.results)
-            .map((result) => result[0].transcript)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .map((result: any) => result[0].transcript)
             .join("");
           setInput(transcript);
 
