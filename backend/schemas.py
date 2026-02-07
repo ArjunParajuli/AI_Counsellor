@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr
 
-from .models import (
+from models import (
     AcceptanceChanceEnum,
     ExamStatusEnum,
     SopStatusEnum,

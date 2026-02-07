@@ -12,8 +12,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from . import auth, models, schemas
-from .database import Base, engine, get_db
+import auth, models, schemas
+from database import Base, engine, get_db
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -552,6 +552,29 @@ def get_my_universities(
     return links
 
 
+@app.delete("/my-universities/{user_university_id}")
+def remove_from_shortlist(
+    user_university_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """Remove a university from user's shortlist."""
+    uu = (
+        db.query(models.UserUniversity)
+        .filter(
+            models.UserUniversity.id == user_university_id,
+            models.UserUniversity.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not uu:
+        raise HTTPException(status_code=404, detail="Shortlisted university not found")
+
+    db.delete(uu)
+    db.commit()
+    return {"message": "University removed from shortlist"}
+
+
 # -------------------------
 # To-dos and application guidance
 # -------------------------
@@ -680,7 +703,7 @@ def get_application_guidance(
 # AI counsellor (LLM-powered via OpenRouter)
 # -------------------------
 
-from . import llm
+import llm
 import asyncio
 
 

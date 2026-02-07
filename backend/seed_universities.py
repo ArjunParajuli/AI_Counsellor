@@ -2,8 +2,8 @@
 Seed script to populate the database with universities from various countries.
 Run with: python -m backend.seed_universities
 """
-from .database import SessionLocal, engine, Base
-from . import models
+from database import SessionLocal, engine, Base
+import models
 
 # Create tables if they don't exist
 Base.metadata.create_all(bind=engine)

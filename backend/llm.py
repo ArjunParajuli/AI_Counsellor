@@ -11,7 +11,7 @@ from typing import Any
 
 import httpx
 
-from .config import get_settings
+from config import get_settings
 
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
