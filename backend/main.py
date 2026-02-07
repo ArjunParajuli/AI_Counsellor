@@ -12,6 +12,12 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
+import sys
+import os
+
+# Add the directory containing this file to the Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 import auth, models, schemas
 from database import Base, engine, get_db
 from dotenv import load_dotenv
