@@ -71,6 +71,16 @@ export default function NavBar() {
 
     const isAuthPage = pathname?.startsWith("/auth");
     const isLanding = pathname === "/";
+    const isOnboarding = pathname === "/onboarding";
+
+    // On onboarding page, show minimal nav (just theme toggle)
+    if (isOnboarding) {
+        return (
+            <nav className="flex items-center gap-3">
+                <ThemeToggle />
+            </nav>
+        );
+    }
 
     if (isLanding || isAuthPage) {
         return (
